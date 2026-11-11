@@ -35,11 +35,12 @@ void manage_lights(void);                 // Manages the light sequences, so the
 // ISRs
 void __interrupt(high_priority) high_isr(void) {
     // INT0 Flag indicates Ped button is pressed & is INT0 Enabled?
-    if (INTCONbits.INT0F && INTCONbits.INT0E) {
-        INTCONbits.INT0F = 0; // Clear the flag
+    if (PED_IN && INTCONbits.INT0E) {
+        PED_IN = 0; // Clear the flag
         ped_cross_req = 1; // Tell the FSM Peds want to cross
         set_wl(1); // Set the wait lights on
     }
+    return;
 }
 
 

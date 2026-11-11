@@ -24,10 +24,10 @@
 
 // ### Pin Assignments & Naming ###
 // Pedestrian Button
-#define PED_IN PORTBbits.RB0
+#define PED_IN INTCONbits.INT0F
 // Pedestrian Lights
 // Used to set all the WL bits without overwriting the value on RB0
-#define PED_WL_MASK 0xF0
+#define PED_WL_MASK 0x0F
 // Macro to set write a value just to the upper 4 bits, whilst maintaing the
 // value in the lower 4 bits (specifially RB0, but we don't care about 1-3)
 #define PED_WL_SET(val) (LATB = (LATB & 0x0F) | (((val) & PED_WL_MASK) << 4))

@@ -31,6 +31,7 @@ void configure_io (void) {
 void set_wl (bool on_off) {
     if (on_off) {
         PED_WL_SET(0b1111);
+        //LATB = 0xF0;        
     } else {
         PED_WL_SET(0b0000);
     }
