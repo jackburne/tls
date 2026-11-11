@@ -18,6 +18,7 @@
 void configure_io (void) {
     // Port A RA0-3 are inputs, don't care about 4-6, 7 unused
     ROAD_SENSE_CFG = 0b00001111;
+    ADCON1bits.PCFG = 0b0000; // Sets Port A as all analog inputs
     // Port B RB0 is input, everything else output
     PED_CFG = 0b00000001;
     // Port D is all the road and pedestrian lights, all digital outs
@@ -57,8 +58,8 @@ void set_mr(int desired_light) {
             break;
         case 3: // GREEN Only
             MR_RED = 0;
-            MR_AMB = 1;
-            MR_GRE = 0;
+            MR_AMB = 0;
+            MR_GRE = 1;
             break;
         default: // Any other input forces an RED
             MR_RED = 1;
@@ -66,7 +67,6 @@ void set_mr(int desired_light) {
             MR_GRE = 0;
             break;
     }
-    return 0;
 }
 
 
@@ -91,8 +91,8 @@ void set_sr(int desired_light) {
             break;
         case 3: // GREEN Only
             SR_RED = 0;
-            SR_AMB = 1;
-            SR_GRE = 0;
+            SR_AMB = 0;
+            SR_GRE = 1;
             break;
         default: // Any other input forces an RED
             SR_RED = 1;
@@ -100,20 +100,18 @@ void set_sr(int desired_light) {
             SR_GRE = 0;
             break;
     }
-    return 0;
 }
 
 
-// Set the pedestrian lights
-// Set the main road lights
+// Set the pedestrian crossing lights
 // 0: Red, 1: Gre
-void set_mr(int desired_light) {
+void set_pc(int desired_light) {
     switch (desired_light) {
         case 0: // RED Only
             PED_RED = 1;
             PED_GRE = 0;
             break;
-        case 1: // RED & AMBER
+        case 1: // GREEN Only
             PED_RED = 0;
             PED_GRE = 1;
             break;
@@ -122,5 +120,4 @@ void set_mr(int desired_light) {
             PED_GRE = 0;
             break;
     }
-    return 0;
 }
