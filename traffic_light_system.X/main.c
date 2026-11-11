@@ -33,6 +33,7 @@ void manage_lights(void);                 // Manages the light sequences, so the
 
 
 // ISRs
+// HP ISR only handles the ped button pressing
 void __interrupt(high_priority) high_isr(void) {
     // INT0 Flag indicates Ped button is pressed & is INT0 Enabled?
     if (PED_IN && INTCONbits.INT0E) {
@@ -40,6 +41,14 @@ void __interrupt(high_priority) high_isr(void) {
         ped_cross_req = 1; // Tell the FSM Peds want to cross
         set_wl(1); // Set the wait lights on
     }
+    return;
+}
+
+
+// Handles road sensors and timers
+void __interrupt(low_priority) low_isr(void) {
+    // Wait Timer fires
+    
     return;
 }
 
