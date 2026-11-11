@@ -5,15 +5,21 @@
  * Created on 08 October 2026, 11:37
  */
 
-
-// Defining board connection
-#define MAIN_RD_A PORTAbits.RA0
-#define MAIN_RD_B PORTAbits.RA2
-#define SIDE_RD_
-
-
+#include "pic_configuration.h" // Contains all the pragma statements for pic configuration
 #include <xc.h>
+#include "io.h"
+
+// ## Function declarations
+void setup(void);
+
 
 void main(void) {
     return;
+}
+
+
+// Initial setup on system boot
+void setup(void) {
+    configure_io();
+    
 }
