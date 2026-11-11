@@ -42,13 +42,17 @@
 #define MR_GRE  LATDbits.LATD5
 #define MR_AMB  LATDbits.LATD6
 #define MR_RED  LATDbits.LATD7
+// Using the Latched outputs instead of PORTx bits
+// as this removes the need reading the value directly off the port,
+// it will just assume the value is whatever the PORTx register holds
+// which is better practice for the PICs
 
 
 // ### Function Definitions ###
 void configure_io (void);   // Initial setup of the IO
 void set_wl (bool on_off);  // Set the ped wait lights on/off
-void set_mr (int desired_light); // Set the lights on the main road
-void set_sr (int desired_light); // Set the lights on the side road
-void set_pc (int desired_light); // 1: Ped is GREEN, 0: Ped is RED
+void set_mr (int desired_light); // Set the lights on main road
+void set_sr (int desired_light); // Set the lights on side road
+void set_pc (int desired_light); // Set pedestrian crossing lights
 
 #endif	/* IO_H */
