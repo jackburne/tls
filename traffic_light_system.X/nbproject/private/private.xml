@@ -3,7 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/jdb/Documents/uni/micros_programmable_logic/inputs_lab/traffic_light_system.X/main.c</file>
+            <file>file:/home/jdb/Documents/uni/micros_programmable_logic/traffic_light_system/traffic_light_system.X/fsm_vector_masks.h</file>
+            <file>file:/home/jdb/Documents/uni/micros_programmable_logic/traffic_light_system/traffic_light_system.X/pic_configuration.h</file>
+            <file>file:/home/jdb/Documents/uni/micros_programmable_logic/traffic_light_system/traffic_light_system.X/io.h</file>
+            <file>file:/home/jdb/Documents/uni/micros_programmable_logic/traffic_light_system/traffic_light_system.X/main.c</file>
         </group>
     </open-files>
 </project-private>
