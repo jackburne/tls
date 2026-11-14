@@ -28,20 +28,20 @@
 // Pedestrian Lights
 // Used to set all the WL bits without overwriting the value on RB0
 #define PED_WL_MASK 0x0F
-// Macro to set write a value just to the upper 4 bits, whilst maintaing the
-// value in the lower 4 bits (specifially RB0, but we don't care about 1-3)
+// Macro to set write a value just to the upper 4 bits, whilst maintaining the
+// value in the lower 4 bits (specifically RB0, but we don't care about 1-3)
 #define PED_WL_SET(val) (LATB = (LATB & 0x0F) | (((val) & PED_WL_MASK) << 4))
 // Use macro like: PED_WL_SET(0b1111) to turn all wait lights on
 
 // Road Lights
-#define PED_GRE LATDbits.LATD0
-#define PED_RED LATDbits.LATD1
-#define SR_GRE  LATDbits.LATD2
-#define SR_AMB  LATDbits.LATD3
-#define SR_RED  LATDbits.LATD4
-#define MR_GRE  LATDbits.LATD5
-#define MR_AMB  LATDbits.LATD6
-#define MR_RED  LATDbits.LATD7
+#define OUT_PED_GRE LATDbits.LATD0
+#define OUT_PED_RED LATDbits.LATD1
+#define OUT_SR_GRE  LATDbits.LATD2
+#define OUT_SR_AMB  LATDbits.LATD3
+#define OUT_SR_RED  LATDbits.LATD4
+#define OUT_MR_GRE  LATDbits.LATD5
+#define OUT_MR_AMB  LATDbits.LATD6
+#define OUT_MR_RED  LATDbits.LATD7
 // Using the Latched outputs instead of PORTx bits
 // as this removes the need reading the value directly off the port,
 // it will just assume the value is whatever the PORTx register holds

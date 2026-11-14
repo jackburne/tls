@@ -43,29 +43,29 @@ void set_wl (bool on_off) {
 void set_mr(int desired_light) {
     switch (desired_light) {
         case 0: // RED Only
-            MR_RED = 1;
-            MR_AMB = 0;
-            MR_GRE = 0;
+            OUT_MR_RED = 1;
+            OUT_MR_AMB = 0;
+            OUT_MR_GRE = 0;
             break;
         case 1: // RED & AMBER
-            MR_RED = 1;
-            MR_AMB = 1;
-            MR_GRE = 0;
+            OUT_MR_RED = 1;
+            OUT_MR_AMB = 1;
+            OUT_MR_GRE = 0;
             break;
         case 2: // AMBER Only
-            MR_RED = 0;
-            MR_AMB = 1;
-            MR_GRE = 0;
+            OUT_MR_RED = 0;
+            OUT_MR_AMB = 1;
+            OUT_MR_GRE = 0;
             break;
         case 3: // GREEN Only
-            MR_RED = 0;
-            MR_AMB = 0;
-            MR_GRE = 1;
+            OUT_MR_RED = 0;
+            OUT_MR_AMB = 0;
+            OUT_MR_GRE = 1;
             break;
         default: // Any other input forces an RED
-            MR_RED = 1;
-            MR_AMB = 0;
-            MR_GRE = 0;
+            OUT_MR_RED = 1;
+            OUT_MR_AMB = 0;
+            OUT_MR_GRE = 0;
             break;
     }
 }
@@ -76,29 +76,29 @@ void set_mr(int desired_light) {
 void set_sr(int desired_light) {
     switch (desired_light) {
         case 0: // RED Only
-            SR_RED = 1;
-            SR_AMB = 0;
-            SR_GRE = 0;
+            OUT_SR_RED = 1;
+            OUT_SR_AMB = 0;
+            OUT_SR_GRE = 0;
             break;
         case 1: // RED & AMBER
-            SR_RED = 1;
-            SR_AMB = 1;
-            SR_GRE = 0;
+            OUT_SR_RED = 1;
+            OUT_SR_AMB = 1;
+            OUT_SR_GRE = 0;
             break;
         case 2: // AMBER Only
-            SR_RED = 0;
-            SR_AMB = 1;
-            SR_GRE = 0;
+            OUT_SR_RED = 0;
+            OUT_SR_AMB = 1;
+            OUT_SR_GRE = 0;
             break;
         case 3: // GREEN Only
-            SR_RED = 0;
-            SR_AMB = 0;
-            SR_GRE = 1;
+            OUT_SR_RED = 0;
+            OUT_SR_AMB = 0;
+            OUT_SR_GRE = 1;
             break;
         default: // Any other input forces an RED
-            SR_RED = 1;
-            SR_AMB = 0;
-            SR_GRE = 0;
+            OUT_SR_RED = 1;
+            OUT_SR_AMB = 0;
+            OUT_SR_GRE = 0;
             break;
     }
 }
@@ -109,16 +109,16 @@ void set_sr(int desired_light) {
 void set_pc(int desired_light) {
     switch (desired_light) {
         case 0: // RED Only
-            PED_RED = 1;
-            PED_GRE = 0;
+            OUT_PED_RED = 1;
+            OUT_PED_GRE = 0;
             break;
         case 1: // GREEN Only
-            PED_RED = 0;
-            PED_GRE = 1;
+            OUT_PED_RED = 0;
+            OUT_PED_GRE = 1;
             break;
         default: // Any other input forces an RED
-            PED_RED = 1;
-            PED_GRE = 0;
+            OUT_PED_RED = 1;
+            OUT_PED_GRE = 0;
             break;
     }
 }
