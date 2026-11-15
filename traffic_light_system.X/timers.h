@@ -20,7 +20,6 @@ void start_pc_timer(void);
 void start_wait_timer(void);
 void start_fast_switch_timer(void);
 void stop_wd_timer(void);
-void stop_fast_switch_timer(void);
 
 
 #endif	/* TIMERS_H */
