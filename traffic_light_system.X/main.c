@@ -111,7 +111,7 @@ void main(void) {
                 }
                 break;
             case ST_SR_GREEN:       // S5
-                if (ANY_SET(fsm_inputs, IN_SLOW_TIMER_DONE) ||
+                if (ANY_SET(fsm_inputs, IN_FS_TIMER_DONE) ||
                         ALL_SET(fsm_inputs, (IN_RED_TIMER_DONE | IN_MR_REQ))) {
                     enter_next_state(ST_SR_AMBER);
                 }
