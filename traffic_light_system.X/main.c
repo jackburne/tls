@@ -55,7 +55,7 @@ void setup(void);                   // First-time boot setup
 void configure_interrupts(void);    // Interrupts configuration
 void manage_lights(void);           // Manages the light sequences, so there are never 2 green signals at once
 void update_input_vector(void);     // Used to update the FSM's input vector after any interrupts have occurred, checked every loop
-void enter_next_state(void);
+void enter_next_state(state_t);
 
 
 // ISRs
@@ -86,18 +86,57 @@ void __interrupt(low_priority) low_isr(void) {
 
 void main(void) {
     setup();
-
     while (1) {
-        update_input_vector();
-        
-//        switch (state) {
-//            case ST_ALL_RED:
-//                // Transition to ST_MR_AMBER (S7)
-//                if (ANY_SET(fsm_input, (IN_PC_REQ | IN_SR_REQ)) && ) {
-//                    
-//                }
-//                break;
-//        }
+        update_input_vector(); // Process any new async flags from interrupts
+        switch (state) { // Check the transition requirements from each state
+            case ST_ALL_RED:        // S2
+                if (NONE_SET(fsm_inputs, (IN_PC_REQ | IN_SR_REQ)) 
+                        && ALL_SET(fsm_inputs, IN_WAIT_TIMER_DONE)) {
+                    enter_next_state(ST_MR_AMBER);
+                } else if (ALL_SET(fsm_inputs, IN_PC_REQ | IN_WAIT_TIMER_DONE)) {
+                    enter_next_state(ST_PED_GREEN);
+                } else if (ALL_SET(fsm_inputs, (IN_SR_REQ | IN_WAIT_TIMER_DONE))) {
+                    enter_next_state(ST_SR_AMBER_RED);
+                }
+                break;
+            case ST_PED_GREEN:      // S3
+                if (ANY_SET(fsm_inputs, IN_PC_TIMER_DONE)) {
+                    enter_next_state(ST_ALL_RED);
+                }
+                break;
+            case ST_SR_AMBER_RED:   // S4
+                if (ANY_SET(fsm_inputs, IN_AMB_TIMER_DONE)) {
+                    enter_next_state(ST_SR_GREEN);
+                }
+                break;
+            case ST_SR_GREEN:       // S5
+                if (ANY_SET(fsm_inputs, IN_SLOW_TIMER_DONE) ||
+                        ALL_SET(fsm_inputs, (IN_RED_TIMER_DONE | IN_MR_REQ))) {
+                    enter_next_state(ST_SR_AMBER);
+                }
+                break;
+            case ST_SR_AMBER:       // S6
+                if (ANY_SET(fsm_inputs, IN_AMB_TIMER_DONE)) {
+                    enter_next_state(ST_ALL_RED);
+                }
+                break;
+            case ST_MR_AMBER_RED:   // S7
+                if (ANY_SET(fsm_inputs, IN_AMB_TIMER_DONE)) {
+                    enter_next_state(ST_ALL_RED);
+                }
+                break;
+            case ST_MR_GREEN:       // S0
+                if (ANY_SET(fsm_inputs, IN_NC_TIMER_DONE) &&
+                        ANY_SET(fsm_inputs, (IN_WD_TIMER | IN_SR_REQ | IN_PC_REQ))) {
+                    enter_next_state(ST_MR_AMBER);
+                }
+                break;
+            case ST_MR_AMBER:       // S1
+                if (ANY_SET(fsm_inputs, IN_AMB_TIMER_DONE)) {
+                    enter_next_state(ST_ALL_RED);
+                }
+                break;
+        }
     }
     return;
 }
@@ -109,52 +148,31 @@ void update_input_vector() {
     uint16_t in = 0b1111110000000000; // Temporary input vector of all 0's, 1's for the upper bits we don't use (9-15)
     
     // Check for Side Road Requests
-    if (side_road_req && !side_road_done) {
-        in |= IN_SR_REQ; // Set SR_REQ bit
-    }
+    if (side_road_req && !side_road_done) in |= IN_SR_REQ; // Set SR_REQ bit}
     
     // Check for Pedestrian Crossing Requests
-    if (ped_cross_req && !ped_cross_done) {
-        in |= IN_PC_REQ;
-    }
+    if (ped_cross_req && !ped_cross_done) in |= IN_PC_REQ;
     
     // Check for Watchdog Timer (simple check for a bad sensor, if no change has occurred for ages, force one)
-    if (watchdog_flag) {
-        in |= IN_WD_TIMER_DONE;
-    }
+    if (watchdog_flag)                    in |= IN_WD_TIMER_DONE;
                 
     // Has the "No Change" timer fired?*
-    if (nochange_flag) {
-        in |= IN_NC_TIMER_DONE;
-    }
+    if (nochange_flag)                    in |= IN_NC_TIMER_DONE;
     
     // Check for amber & Red/Amber light timer
-    if (amb_timer_flag) {
-        in |= IN_AMB_TIMER_DONE;
-    }
+    if (amb_timer_flag)                   in |= IN_AMB_TIMER_DONE;
     
     // Check for Red Light Timer
-    if (red_timer_flag) {
-        in |= IN_RED_TIMER_DONE;
-    }
+    if (red_timer_flag)                   in |= IN_RED_TIMER_DONE;
     
     // Check Wait (All Red) Timer
-    if (wait_timer_flag) {
-        in |= IN_WAIT_TIMER_DONE;
-    }
+    if (wait_timer_flag)                  in |= IN_WAIT_TIMER_DONE;
     
     // Check for the SR Slow Timer
-    if (slow_timer_flag) {
-        in |= IN_SLOW_TIMER_DONE;
-    }
+    if (slow_timer_flag)                  in |= IN_SLOW_TIMER_DONE;
     
     // Update the real input vector after considering all the flags
     fsm_inputs = in;
-}
-
-
-void manage_lights() {
-    
 }
 
 
