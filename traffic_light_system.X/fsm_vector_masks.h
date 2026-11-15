@@ -23,11 +23,11 @@
 #define IN_RED_TIMER_DONE   (1u << 6)   // RED light Timer has fired
 #define IN_WAIT_TIMER_DONE  (1u << 7)   // WAIT Timer fires
 #define IN_SR_TIMER_DONE    (1u << 8)   // Side Road Timer (longer than RED timer, allows a faster transition to main road if MR_REQ=1)
-#define IN_SLOW_TIMER_DONE  (1u << 9)   // "Sideroad Slow Change", i.e. no demand from Main Road
+#define IN_FS_TIMER_DONE    (1u << 9)   // "Fast Switch", i.e. there is demand from the main road
 #define IN_PC_TIMER_DONE    (1u << 10)  // Pedestrian Crossing done this loop?
 
 // Useful macros to check input conditions
-#define ALL_SET(v, m)   (((v) & (m) == (m))) // Are all the mask bits (m) set in the input vector (v)?
+#define ALL_SET(v, m)   (((v) & (m)) == (m)) // Are all the mask bits (m) set in the input vector (v)?
 #define ANY_SET(v, m)   (((v) & (m)) != 0)   // Are ANY of the mask bits (m) set in the input vector (v)?
 #define NONE_SET(v, m)  (((v) & (m)) == 0)   // Are NONE of the mask bits (m) set in the input vector (v)?
 
