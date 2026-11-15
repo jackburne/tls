@@ -51,8 +51,8 @@
 // ### Function Definitions ###
 void configure_io (void);   // Initial setup of the IO
 void set_wl (bool on_off);  // Set the ped wait lights on/off
-void set_mr (int desired_light); // Set the lights on main road
-void set_sr (int desired_light); // Set the lights on side road
-void set_pc (int desired_light); // Set pedestrian crossing lights
+void set_mr (int desired_light); // Set the lights on main road (0: RED, 1: AMB/RED, 2: AMB, 3: GRE)
+void set_sr (int desired_light); // Set the lights on side road (0: RED, 1: AMB/RED, 2: AMB, 3: GRE)
+void set_pc (int desired_light); // Set pedestrian crossing lights (0: RED, 1: GRE)
 
 #endif	/* IO_H */
