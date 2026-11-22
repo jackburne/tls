@@ -146,7 +146,7 @@ void main(void) {
 // Called once per system loop, updates the FSM's input vector based on recent
 // interrupts
 void update_input_vector() {
-    uint16_t in = 0b1111110000000000; // Temporary input vector of all 0's, 1's for the upper bits we don't use (9-15)
+    uint16_t in = 0b1111100000000000; // Temporary input vector of all 0's, 1's for the upper bits we don't use (11-15)
     
     // Check for Side Road Requests
     if (side_road_req && !side_road_done) in |= IN_SR_REQ; // Set SR_REQ bit}
@@ -282,5 +282,8 @@ void setup(void) {
     // State: S2 (All Red)
     state = ST_ALL_RED;
     // Inputs: Ped Done, SR Done, upper 6 bits always 1
-    fsm_inputs = 0b000001100000000;
+    //fsm_inputs = 0b000001100000000;
+    wait_timer_flag = 1;
+    ped_cross_done = 1;
+    side_road_done = 1;
 }
