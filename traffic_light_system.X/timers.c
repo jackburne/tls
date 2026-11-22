@@ -11,6 +11,34 @@
 #include <xc.h>
 #include "timers.h"
 
+static volatile uint8_t tmr0_count[TMR_COUNT]; // Array to store timer "ticks"
+volatile uint8_t tmr0_expired = 0; // bitfield to store which "timers" have completed
+
+
+void tmr0_start(timer_id_t id, uint16_t ticks) {
+    INTCONbits.GIEL = 0;         // Disable peripheral interrupts
+    tmr0_count[id] = ticks;      // Number of ticks to run the timer for
+    tmr0_expired &= ~(1u << id); // Clear the timer at "id" from the bitfield tmr0_expired
+    INTCONbits.GIEL = 1;         // Re-enable peripheral interrupts
+}
+
+
+void tmr0_stop(timer_id_t id) {
+    INTCONbits.GIEL = 0;
+    tmr0_count[id] = 0;
+    tmr0_expired &= ~(1u << id);
+    INTCONbits.GIEL = 1;
+}
+
+
+void tmr0_tick() {
+    for (uint8_t i = 0; i < TMR_COUNT; i++) {
+        if (tmr0_count[i] && --tmr0_count[i] == 0) {
+            tmr0_expired |= (1u << i);
+        }
+    }
+}
+
 
 // 3 Second time for Amber Light
 void start_amb_timer() {
@@ -62,3 +90,11 @@ void start_nc_timer() {
 
 // 14 second Pedestrian Timer
 
+
+// TODO: Implement these:
+void start_pc_timer() {};
+void start_wd_timer() {};
+void stop_wd_timer() {};
+void start_fast_switch_timer() {};
+void start_wait_timer() {};
+void stop_fast_switch_timer() {};
