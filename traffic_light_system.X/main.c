@@ -54,7 +54,6 @@ state_t state;       // Current Machine State
 // ## Function declarations
 void setup(void);                   // First-time boot setup
 void configure_interrupts(void);    // Interrupts configuration
-void manage_lights(void);           // Manages the light sequences, so there are never 2 green signals at once
 void update_input_vector(void);     // Used to update the FSM's input vector after any interrupts have occurred, checked every loop
 void enter_next_state(state_t);
 
@@ -74,11 +73,19 @@ void __interrupt(high_priority) high_isr(void) {
 
 // LP ISR handles road sensors and timers
 void __interrupt(low_priority) low_isr(void) {
-    // Wait Timer fires
-    
     // Side Road Request
     if (PIE1bits.ADIE && PIR1bits.ADIF) { // ADC interrupt enabled && conversion is finished
-        
+        // TODO: Implement me
+    }
+    
+    // TIMER0 Interrupt fires, and interrupts enabled
+    if (INTCONbits.PEIE && INTCONbits.TMR0IE && INTCONbits.TMR0IF) {
+        INTCONbits.TMR0IF = 0; // Clear the interrupt flag
+        tmr0_tick(); // Update tick counts
+        check_timer_flags(); // update timer flags
+        // Reload the TIMER0 preload values
+        TMR0L = TMR0L_VAL;
+        TMR0H = TMR0H_VAL;
     }
     
     return;
@@ -155,22 +162,22 @@ void update_input_vector() {
     if (ped_cross_req && !ped_cross_done) in |= IN_PC_REQ;
     
     // Check for Watchdog Timer (simple check for a bad sensor, if no change has occurred for ages, force one)
-    if (watchdog_flag)                    in |= IN_WD_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_WD))   in |= IN_WD_TIMER_DONE;
                 
     // Has the "No Change" timer fired?*
-    if (nochange_flag)                    in |= IN_NC_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_NC))   in |= IN_NC_TIMER_DONE;
     
     // Check for amber & Red/Amber light timer
-    if (amb_timer_flag)                   in |= IN_AMB_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_AMB))  in |= IN_AMB_TIMER_DONE;
     
     // Check for Red Light Timer
-    if (red_timer_flag)                   in |= IN_RED_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_RED))  in |= IN_RED_TIMER_DONE;
     
     // Check Wait (All Red) Timer
-    if (wait_timer_flag)                  in |= IN_WAIT_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_WAIT)) in |= IN_WAIT_TIMER_DONE;
     
     // Check for the "Fast Switch" timer
-    if (fs_timer_flag)                    in |= IN_FS_TIMER_DONE;
+    if (timer_expired & (1u <, TMR_FS))   in |= IN_FS_TIMER_DONE;
     
     // Update the real input vector after considering all the flags
     fsm_inputs = in;
@@ -272,11 +279,24 @@ void enter_next_state(state_t new_state) {
 void setup(void) {
     configure_io();
     //configure_interrupts();
+    configure_timer();
     
     // Interrupts Configuration
     RCONbits.IPEN = 1; // Enables Interrupt Priorities
-    INTCON = 0b11010000; // Enables GIE, PEIE and INT0 (RB0)
-    INTCON2 = 0b00000001; // Enables PORTB PUps, INT0 as Falling Edge, RB interrupt High Priority
+    INTCON = 0b11110000; 
+    /* 
+     * Enable GIE (Global Interrupts)
+     * Enable PEIE (Perihperal Interrupts)
+     * Enable TMR0IE (timer0 interrupts)
+     * Enable INT0IE (External Interrupts)
+    */
+    INTCON2 = 0b00000001; 
+    /* 
+     * Enables PORTB PUps
+     * bit6, INT0 as Falling Edge
+     * bit7, RB interrupt High Priority
+     * bit2, TMR0IP set to Low Priority
+     */
     
     // ### FSM Starting Conditions ###
     // State: S2 (All Red)
