@@ -11,30 +11,50 @@
 #include <xc.h>
 #include "timers.h"
 
-static volatile uint8_t tmr0_count[TMR_COUNT]; // Array to store timer "ticks"
-volatile uint8_t tmr0_expired = 0; // bitfield to store which "timers" have completed
+static volatile uint8_t timer_count[TMR_COUNT]; // Array to store timer "ticks"
+volatile uint8_t timer_expired = 0; // bitfield to store which "timers" have expired/completed
+
+
+void configure_timer() {
+    T0CONbits = 0b10001000;
+    /* TIMER0 Configuration Bits
+     * 
+     * TMR0ON  : 1, Don't start ticking immediately
+     * T08BIT  : 0, 16-bit mode
+     * T0CS    : 0, Use system clock
+     * T0SE    : 0, Don't care, not using external clock
+     * PSA     : 0, Prescale assigned
+     * T0PS0:2 : 0011, 1:16 prescale
+     */
+    TMR0H = TMR0H_VAL; // Preload "28036" into the TMR0L and H registers
+    TMR0L = TMR0L_VAL;
+}
 
 
 void tmr0_start(timer_id_t id, uint16_t ticks) {
     INTCONbits.GIEL = 0;         // Disable peripheral interrupts
-    tmr0_count[id] = ticks;      // Number of ticks to run the timer for
-    tmr0_expired &= ~(1u << id); // Clear the timer at "id" from the bitfield tmr0_expired
+    timer_count[id] = ticks;      // Number of "ticks" to run the timer for
+    timer_expired &= ~(1u << id); // Unset/Clear the expiry flag for this timer so it doesnt instantly toggle off
     INTCONbits.GIEL = 1;         // Re-enable peripheral interrupts
 }
 
 
 void tmr0_stop(timer_id_t id) {
-    INTCONbits.GIEL = 0;
-    tmr0_count[id] = 0;
-    tmr0_expired &= ~(1u << id);
-    INTCONbits.GIEL = 1;
+    INTCONbits.GIEL = 0;         // Disable peripheral interrupts
+    timer_count[id] = 0;          // Clear the tick count for the timer
+    timer_expired &= ~(1u << id); // Unset/toggle the expiry flag for the timer
+    INTCONbits.GIEL = 1;         // Re-enable peripheral interrupts
 }
 
 
+// Every time we count "n" milliseconds, update all our SW timers with 1 "tick"
 void tmr0_tick() {
-    for (uint8_t i = 0; i < TMR_COUNT; i++) {
-        if (tmr0_count[i] && --tmr0_count[i] == 0) {
-            tmr0_expired |= (1u << i);
+    for (uint8_t i = 0; i < TMR_COUNT; i++) { // For every timer in our enum
+        if (timer_count[i] > 0) { // Is the timer running? (i.e. it's count is non-zero)
+            timer_count[i]--;     // Decrement it
+            if (timer_count[0] == 0) { // Then recheck if it's 0
+                timer_expired |= (1u << i); // If yes, toggle it's "expired" flag
+            }
         }
     }
 }
@@ -42,59 +62,65 @@ void tmr0_tick() {
 
 // 3 Second time for Amber Light
 void start_amb_timer() {
-    INTCONbits.TMR0IF = 0;  // Clearing the T0 Interrupt Flag
-    TMR0L = 115;            // Amber timer Starting Value
-    T0CON = 0b11000100;     // Amber timer configuration
-    /* 
-     * TMR0ON: 1, Timer0 Enabled & Started
-     * T08BIT: 1, Timer0 8-bit mode
-     * T0CS  : 0, Internal Instruction Clock
-     * T0SE  : 0, Source Edge Select, we dont care, not using external clock
-     * PSA   : 0, Prescaler Enabled
-     * T0PS  : 100, 1:32 Prescale
-     */
+    tmr0_start(TMR_AMB, MS_TO_TICK(2000));
 }
 
 
-// 1 Second All Red Light
+// 1 minute timer before Side Road goes red again
 void start_red_timer() {
-    INTCONbits.TMR0IF = 0;  // Clearing the T0 Interrupt Flag
-    TMR0L = 209;            // Red timer Starting Value
-    T0CON = 0b11000100;     // Red timer configuration
-    /* 
-     * TMR0ON: 1, Timer0 Enabled & Started
-     * T08BIT: 1, Timer0 8-bit mode
-     * T0CS  : 0, Internal Instruction Clock
-     * T0SE  : 0, Source Edge Select, we dont care, not using external clock
-     * PSA   : 0, Prescaler Enabled
-     * T0PS  : 100, 1:32 Prescale
-     */
+    tmr0_start(TMR_RED, MS_TO_TICK(1000));
+}
+
+
+void stop_red_timer() {
+    tmr0_stop(TMR_RED);
 }
 
 
 // 2 minute "No Change" Timer
 void start_nc_timer() {
-    INTCONbits.TMR0IF = 0;  // Clearing the T0 Interrupt Flag
-    TMR0 = 20535;           // NC timer Starting Value
-    T0CON = 0b10000000;     // NC timer configuration
-    /* 
-     * TMR0ON: 1, Timer0 Enabled & Started
-     * T08BIT: 0, Timer0 16-bit mode
-     * T0CS  : 0, Internal Instruction Clock
-     * T0SE  : 0, Source Edge Select, we dont care, not using external clock
-     * PSA   : 0, Prescaler Enabled
-     * T0PS  : 000, 1:2 Prescale
-     */
+    tmr0_start(TMR_NC, MS_TO_TICK(120000));
 }
 
 
 // 14 second Pedestrian Timer
+void start_pc_timer() {
+    tmr0_start(TMR_PC, MS_TO_TICK(14000));
+}
 
 
-// TODO: Implement these:
-void start_pc_timer() {};
-void start_wd_timer() {};
-void stop_wd_timer() {};
-void start_fast_switch_timer() {};
-void start_wait_timer() {};
-void stop_fast_switch_timer() {};
+// 1 second "All red" wait timer, for crossing to clear
+void start_wait_timer() {
+    tmr0_start(TMR_WAIT, MS_TO_TICK(1000));
+}
+
+
+// 5 minute "Watchdog timer", if not change happens for 5 mins, do a complete loop
+void start_wd_timer() {
+    tmr0_start(TMR_WD, MS_TO_TICK(300000));
+}
+
+
+// Stop the watchdog timer if we transition for any reason
+void stop_wd_timer() {
+    tmr0_stop(TMR_WD);
+}
+
+
+// "Fast Switch" away form side road if there is main road demand
+// Always shorter than RED timer, 30 seconds
+void start_fast_switch_timer() {
+    tmr0_start(TMR_FS, MS_TO_TICK(30000));
+}
+
+
+// Stop the fast swtich if we moved on the RED timer
+void stop_fast_switch_timer() {
+    tmr0_stop(TMR_FS);
+}
+
+
+// 1 second "All Red" wait timer
+void start_wait_timer() {
+    tmr0_start(TMR_WAIT, MS_TO_TICK(1000));
+}
