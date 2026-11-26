@@ -11,12 +11,12 @@
 #include <xc.h>
 #include "timers.h"
 
-static volatile uint8_t timer_count[TMR_COUNT]; // Array to store timer "ticks"
+static volatile uint16_t timer_count[TMR_COUNT]; // Array to store timer "ticks"
 volatile uint8_t timer_expired = 0; // bitfield to store which "timers" have expired/completed
 
 
 void configure_timer() {
-    T0CONbits = 0b10001000;
+    T0CON = 0b000010011;
     /* TIMER0 Configuration Bits
      * 
      * TMR0ON  : 1, Don't start ticking immediately
@@ -24,26 +24,27 @@ void configure_timer() {
      * T0CS    : 0, Use system clock
      * T0SE    : 0, Don't care, not using external clock
      * PSA     : 0, Prescale assigned
-     * T0PS0:2 : 0011, 1:16 prescale
+     * T0PS0:2 : 011, 1:16 prescale
      */
     TMR0H = TMR0H_VAL; // Preload "28036" into the TMR0L and H registers
     TMR0L = TMR0L_VAL;
+    T0CONbits.TMR0ON = 1; // Start the timer after preloading
 }
 
 
 void tmr0_start(timer_id_t id, uint16_t ticks) {
-    INTCONbits.GIEL = 0;         // Disable peripheral interrupts
+    INTCONbits.GIEH = 0;         // Disable peripheral interrupts
     timer_count[id] = ticks;      // Number of "ticks" to run the timer for
     timer_expired &= ~(1u << id); // Unset/Clear the expiry flag for this timer so it doesnt instantly toggle off
-    INTCONbits.GIEL = 1;         // Re-enable peripheral interrupts
+    INTCONbits.GIEH = 1;         // Re-enable peripheral interrupts
 }
 
 
 void tmr0_stop(timer_id_t id) {
-    INTCONbits.GIEL = 0;         // Disable peripheral interrupts
+    INTCONbits.GIEH = 0;         // Disable peripheral interrupts
     timer_count[id] = 0;          // Clear the tick count for the timer
     timer_expired &= ~(1u << id); // Unset/toggle the expiry flag for the timer
-    INTCONbits.GIEL = 1;         // Re-enable peripheral interrupts
+    INTCONbits.GIEH = 1;         // Re-enable peripheral interrupts
 }
 
 
@@ -52,7 +53,7 @@ void tmr0_tick() {
     for (uint8_t i = 0; i < TMR_COUNT; i++) { // For every timer in our enum
         if (timer_count[i] > 0) { // Is the timer running? (i.e. it's count is non-zero)
             timer_count[i]--;     // Decrement it
-            if (timer_count[0] == 0) { // Then recheck if it's 0
+            if (timer_count[i] == 0) { // Then recheck if it's 0
                 timer_expired |= (1u << i); // If yes, toggle it's "expired" flag
             }
         }
@@ -79,7 +80,8 @@ void stop_red_timer() {
 
 // 2 minute "No Change" Timer
 void start_nc_timer() {
-    tmr0_start(TMR_NC, MS_TO_TICK(120000));
+    //tmr0_start(TMR_NC, MS_TO_TICK(120000));
+    tmr0_start(TMR_NC, MS_TO_TICK(2000)); // Test Case, 2 seconds so I dont wait ages
 }
 
 
@@ -117,10 +119,4 @@ void start_fast_switch_timer() {
 // Stop the fast swtich if we moved on the RED timer
 void stop_fast_switch_timer() {
     tmr0_stop(TMR_FS);
-}
-
-
-// 1 second "All Red" wait timer
-void start_wait_timer() {
-    tmr0_start(TMR_WAIT, MS_TO_TICK(1000));
 }

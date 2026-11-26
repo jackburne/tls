@@ -11,7 +11,7 @@
 #ifndef TIMERS_H
 #define	TIMERS_H
 
-#define MS_TO_TICK(ms) ((ms) / 100) // 100ms clock ticks
+#define MS_TO_TICK(ms)  ((uint16_t)((uint32_t)(ms) / 100)) // 100ms clock ticks
 // TIMER0 preload values, reset on every ISR trigger
 #define TMR0H_VAL 0x6D
 #define TMR0L_VAL 0x84

@@ -13,9 +13,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "io.h"               // Handles IO bits
 #include "fsm_vector_masks.h" // bit masking for easier input checks
-#include "timers.h"
+#include "io.h"               // Handles IO bits
+#include "timers.h"           // Configures HW timers and controls SW timers
 
 
 // Possible States, enum used for faster referencing
@@ -54,6 +54,7 @@ state_t state;       // Current Machine State
 // ## Function declarations
 void setup(void);                   // First-time boot setup
 void configure_interrupts(void);    // Interrupts configuration
+void check_timer_flags(void);       // Check software timer triggers and update their corresponding flags
 void update_input_vector(void);     // Used to update the FSM's input vector after any interrupts have occurred, checked every loop
 void enter_next_state(state_t);
 
@@ -79,7 +80,7 @@ void __interrupt(low_priority) low_isr(void) {
     }
     
     // TIMER0 Interrupt fires, and interrupts enabled
-    if (INTCONbits.PEIE && INTCONbits.TMR0IE && INTCONbits.TMR0IF) {
+    if (INTCONbits.TMR0IE && INTCONbits.TMR0IF) {
         INTCONbits.TMR0IF = 0; // Clear the interrupt flag
         tmr0_tick(); // Update tick counts
         check_timer_flags(); // update timer flags
@@ -87,7 +88,6 @@ void __interrupt(low_priority) low_isr(void) {
         TMR0L = TMR0L_VAL;
         TMR0H = TMR0H_VAL;
     }
-    
     return;
 }
 
@@ -150,6 +150,22 @@ void main(void) {
 }
 
 
+// Checks for expired timers, updated their corresponding flags
+void check_timer_flags() {
+    if (timer_expired & (1u << TMR_AMB))  amb_timer_flag = 1; // AMBER timer fired
+    
+    if (timer_expired & (1u << TMR_RED))  red_timer_flag = 1; // RED timer fired
+    
+    if (timer_expired & (1u << TMR_WD))  watchdog_flag = 1;   // WATCHDOG timer fired
+    
+    if (timer_expired & (1u << TMR_NC))  nochange_flag = 1;   // NO CHANGE timer fired
+    
+    if (timer_expired & (1u << TMR_PC))  pc_timer_flag = 1;   // Pedestrian Crossing timer fired
+    
+    if (timer_expired & (1u << TMR_FS))  fs_timer_flag = 1;   // "FAST SWITCH" timer fired
+}
+
+
 // Called once per system loop, updates the FSM's input vector based on recent
 // interrupts
 void update_input_vector() {
@@ -162,22 +178,22 @@ void update_input_vector() {
     if (ped_cross_req && !ped_cross_done) in |= IN_PC_REQ;
     
     // Check for Watchdog Timer (simple check for a bad sensor, if no change has occurred for ages, force one)
-    if (timer_expired & (1u <, TMR_WD))   in |= IN_WD_TIMER_DONE;
+    if (watchdog_flag)                    in |= IN_WD_TIMER_DONE;
                 
     // Has the "No Change" timer fired?*
-    if (timer_expired & (1u <, TMR_NC))   in |= IN_NC_TIMER_DONE;
+    if (nochange_flag)                    in |= IN_NC_TIMER_DONE;
     
     // Check for amber & Red/Amber light timer
-    if (timer_expired & (1u <, TMR_AMB))  in |= IN_AMB_TIMER_DONE;
+    if (amb_timer_flag)                   in |= IN_AMB_TIMER_DONE;
     
     // Check for Red Light Timer
-    if (timer_expired & (1u <, TMR_RED))  in |= IN_RED_TIMER_DONE;
+    if (red_timer_flag)                   in |= IN_RED_TIMER_DONE;
     
     // Check Wait (All Red) Timer
-    if (timer_expired & (1u <, TMR_WAIT)) in |= IN_WAIT_TIMER_DONE;
+    if (wait_timer_flag)                  in |= IN_WAIT_TIMER_DONE;
     
     // Check for the "Fast Switch" timer
-    if (timer_expired & (1u <, TMR_FS))   in |= IN_FS_TIMER_DONE;
+    if (fs_timer_flag)                    in |= IN_FS_TIMER_DONE;
     
     // Update the real input vector after considering all the flags
     fsm_inputs = in;
@@ -219,6 +235,7 @@ void enter_next_state(state_t new_state) {
             // Clear wait timer flag & start the timer (waiting for crossing to clear)
             wait_timer_flag = 0;
             start_wait_timer();
+            break;
         case ST_PED_GREEN: // S3
             // Ped Crossing GREEN, all other RED
             set_mr(0);
@@ -230,6 +247,7 @@ void enter_next_state(state_t new_state) {
             // Clear the pc timer flag & start the timer
             pc_timer_flag = 0;
             start_pc_timer();
+            break;
         case ST_SR_AMBER_RED: // S4
             // Side Road AMB/RED, all others RED
             set_mr(0);
@@ -238,6 +256,7 @@ void enter_next_state(state_t new_state) {
             // Clear the amb timer flag & Start the the timer
             amb_timer_flag = 0;
             start_amb_timer();
+            break;
         case ST_SR_GREEN: // S5
             // Side Road GREEN, all others RED
             set_mr(0);
@@ -248,6 +267,7 @@ void enter_next_state(state_t new_state) {
             fs_timer_flag = 0;
             start_red_timer();
             start_fast_switch_timer();
+            break;
         case ST_SR_AMBER: // S6
             // Side Road AMBER, all others RED
             set_mr(0);
@@ -259,6 +279,7 @@ void enter_next_state(state_t new_state) {
             stop_fast_switch_timer();
             amb_timer_flag = 0;
             start_amb_timer();
+            break;
         case ST_MR_AMBER_RED: // S7
             // Main Road AMB/RED, all others RED
             set_mr(1);
@@ -270,7 +291,9 @@ void enter_next_state(state_t new_state) {
             watchdog_flag = 0;
             // Start Amber Light timer
             start_amb_timer();
+            break;
     }
+    state = new_state; // Update the global state to the new one
 }
 
 
@@ -278,7 +301,6 @@ void enter_next_state(state_t new_state) {
 // Initial setup on system boot
 void setup(void) {
     configure_io();
-    //configure_interrupts();
     configure_timer();
     
     // Interrupts Configuration
@@ -293,17 +315,25 @@ void setup(void) {
     INTCON2 = 0b00000001; 
     /* 
      * Enables PORTB PUps
-     * bit6, INT0 as Falling Edge
      * bit7, RB interrupt High Priority
+     * bit6, INT0 as Falling Edge
      * bit2, TMR0IP set to Low Priority
      */
     
     // ### FSM Starting Conditions ###
     // State: S2 (All Red)
-    state = ST_ALL_RED;
-    // Inputs: Ped Done, SR Done, upper 6 bits always 1
-    //fsm_inputs = 0b000001100000000;
-    wait_timer_flag = 1;
-    ped_cross_done = 1;
-    side_road_done = 1;
+//    state = ST_ALL_RED;
+//    // Inputs: Ped Done, SR Done, upper 5 bits always 1
+//    //fsm_inputs = 0b000001100000000;
+//    wait_timer_flag = 1;
+//    ped_cross_done = 1;
+//    side_road_done = 1;
+    
+    // S0 Test
+    state = ST_MR_GREEN;
+    fsm_inputs = 0b1111100000000110;
+    side_road_req = 1;
+    ped_cross_req = 1;
+    start_nc_timer();
+    
 }
